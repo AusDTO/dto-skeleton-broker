@@ -59,7 +59,9 @@ func createServiceInstance(c *gin.Context) {
 }
 
 func deleteServiceInstance(c *gin.Context) {
-
+	serviceID := c.Param("service_id")
+	fmt.Printf("Deleting service instance %s for service %s plan %s\n", serviceID)
+	c.JSON(200, struct{}{})
 }
 
 func createServiceBinding(c *gin.Context) {
