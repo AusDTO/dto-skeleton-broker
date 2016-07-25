@@ -26,6 +26,7 @@ func brokerCatalog(c *gin.Context) {
 			Name:        "sample-service",
 			ID:          "c7067f66-3b6e-417e-bf8e-8ae317ddaafd", // https://www.guidgenerator.com/online-guid-generator.aspx
 			Description: "sample-service",
+			Bindable:    true,
 			Plans: []*cf.Plan{
 				{
 					ID:          "9e2d6f97-c9d9-4924-820b-593e3744ed29",
@@ -66,6 +67,20 @@ func deleteServiceInstance(c *gin.Context) {
 
 func createServiceBinding(c *gin.Context) {
 
+	type serviceBindingResponse struct {
+		Credentials    map[string]interface{} `json:"credentials"`
+		SyslogDrainURL string                 `json:"syslog_drain_url,omitempty"`
+	}
+
+	serviceID := c.Param("service_id")
+	serviceBindingID := c.Param("binding_id")
+	fmt.Printf("Creating service binding %s for service %s plan %s instance %s\n",
+		serviceBindingID, serviceID)
+
+	serviceBinding := serviceBindingResponse{
+		SyslogDrainURL: os.Getenv("SYSLOG_DRAIN_URL"),
+	}
+	c.JSON(201, serviceBinding)
 }
 
 func deleteServiceBinding(c *gin.Context) {
