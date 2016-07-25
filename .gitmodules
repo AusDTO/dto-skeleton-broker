@@ -19,3 +19,9 @@
 [submodule "vendor/github.com/cloudfoundry-community/types-cf"]
 	path = vendor/github.com/cloudfoundry-community/types-cf
 	url = https://github.com/cloudfoundry-community/types-cf
+[submodule "vendor/github.com/cloudfoundry-community/go-cfenv"]
+	path = vendor/github.com/cloudfoundry-community/go-cfenv
+	url = https://github.com/cloudfoundry-community/go-cfenv
+[submodule "vendor/github.com/mitchellh/mapstructure"]
+	path = vendor/github.com/mitchellh/mapstructure
+	url = https://github.com/mitchellh/mapstructure
