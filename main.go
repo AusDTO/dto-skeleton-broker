@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/cloudfoundry-community/types-cf"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,8 +19,15 @@ func envOr(key, def string) string {
 }
 
 func brokerCatalog(c *gin.Context) {
+	catalog := cf.Catalog{
+		Services: []*cf.Service{{
+			Name:        "sample-service",
+			ID:          "c7067f66-3b6e-417e-bf8e-8ae317ddaafd", // https://www.guidgenerator.com/online-guid-generator.aspx
+			Description: "sample-service",
+		}},
+	}
 	// cf requires that the body is always JSON, even if it is empty.
-	c.JSON(200, struct{}{})
+	c.JSON(200, catalog)
 }
 
 func createServiceInstance(c *gin.Context) {
