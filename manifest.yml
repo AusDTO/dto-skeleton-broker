@@ -1,0 +1,9 @@
+---
+applications:
+- name: dto-skeleton-broker
+  command: dto-skeleton-broker
+  buildpack: https://github.com/cloudfoundry/go-buildpack.git
+  memory: 256M
+  env:
+    GOVERSION: go1.6
+    GOPACKAGENAME: github.com/AusDTO/dto-skeleton-broker
