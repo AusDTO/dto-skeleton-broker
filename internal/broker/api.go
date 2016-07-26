@@ -73,6 +73,10 @@ func (a *API) createServiceBinding(c *gin.Context) {
 		serviceBindingID, serviceID)
 
 	serviceBinding := serviceBindingResponse{
+		Credentials: map[string]interface{}{
+			"user":     "scott",
+			"password": "tiger",
+		},
 		SyslogDrainURL: os.Getenv("SYSLOG_DRAIN_URL"),
 	}
 	c.JSON(201, serviceBinding)
