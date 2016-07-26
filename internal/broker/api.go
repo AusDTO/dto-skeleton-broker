@@ -1,5 +1,4 @@
-// dto-skeleton-broker
-package main
+package broker
 
 import (
 	"fmt"
@@ -14,7 +13,7 @@ import (
 
 // A Broker represents a Cloud Foundry Service Broker
 type Broker struct {
-	env *cfenv.App
+	Env *cfenv.App
 }
 
 // API implements the Service Broker REST API
@@ -51,7 +50,7 @@ func (a *API) createServiceInstance(c *gin.Context) {
 		DashboardURL string `json:"dashboard_url"`
 	}
 
-	instance := serviceInstanceResponse{DashboardURL: fmt.Sprintf("https://%s/dashboard", a.Broker.env.ApplicationURIs[0])}
+	instance := serviceInstanceResponse{DashboardURL: fmt.Sprintf("https://%s/dashboard", a.Broker.Env.ApplicationURIs[0])}
 	c.JSON(201, instance)
 }
 
@@ -87,11 +86,11 @@ func (a *API) deleteServiceBinding(c *gin.Context) {
 	c.JSON(200, struct{}{})
 }
 
-// newBrokerAPI returns a http.Handler which exposes the Cloud Foundry
+// NewAPI returns a http.Handler which exposes the Cloud Foundry
 // Service Broker API for the supplied Broker implementation.
 // The broker is always protected by the user and pass basic auth
 // credentials.
-func newBrokerAPI(b *Broker, user, pass string) http.Handler {
+func NewAPI(b *Broker, user, pass string) http.Handler {
 	if user == "" || pass == "" {
 		log.Fatal("AUTH_USER and AUTH_PASS must be set")
 	}

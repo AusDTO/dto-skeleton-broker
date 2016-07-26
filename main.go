@@ -8,6 +8,8 @@ import (
 	"os"
 
 	"github.com/cloudfoundry-community/go-cfenv"
+
+	"github.com/AusDTO/dto-skeleton-broker/internal/broker"
 )
 
 func envOr(key, def string) string {
@@ -29,8 +31,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	b := Broker{env: appEnv}
-	api := newBrokerAPI(&b, os.Getenv("AUTH_USER"), os.Getenv("AUTH_PASS"))
+	b := broker.Broker{Env: appEnv}
+	api := broker.NewAPI(&b, os.Getenv("AUTH_USER"), os.Getenv("AUTH_PASS"))
 
 	log.Println(os.Args[0], "listening on", addr)
 	if err := http.ListenAndServe(addr, api); err != nil {
