@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/cloudfoundry-community/go-cfenv"
@@ -20,7 +21,12 @@ func envOr(key, def string) string {
 	return val
 }
 
-func brokerCatalog(c *gin.Context) {
+// A Broker represents a Cloud Foundry Service Broker
+type Broker struct {
+	env *cfenv.App
+}
+
+func (b *Broker) Catalog(c *gin.Context) {
 	catalog := cf.Catalog{
 		Services: []*cf.Service{{
 			Name:        "sample-service",
@@ -41,31 +47,25 @@ func brokerCatalog(c *gin.Context) {
 	c.JSON(200, catalog)
 }
 
-func createServiceInstance(c *gin.Context) {
+func (b *Broker) createServiceInstance(c *gin.Context) {
 	serviceID := c.Param("service_id")
 	fmt.Printf("Creating service instance %s for service %s plan %s\n", serviceID)
-
-	appEnv, err := cfenv.Current()
-	if err != nil {
-		c.AbortWithError(504, err)
-		return
-	}
 
 	type serviceInstanceResponse struct {
 		DashboardURL string `json:"dashboard_url"`
 	}
 
-	instance := serviceInstanceResponse{DashboardURL: fmt.Sprintf("https://%s/dashboard", appEnv.ApplicationURIs[0])}
+	instance := serviceInstanceResponse{DashboardURL: fmt.Sprintf("https://%s/dashboard", b.env.ApplicationURIs[0])}
 	c.JSON(201, instance)
 }
 
-func deleteServiceInstance(c *gin.Context) {
+func (b *Broker) deleteServiceInstance(c *gin.Context) {
 	serviceID := c.Param("service_id")
 	fmt.Printf("Deleting service instance %s for service %s plan %s\n", serviceID)
 	c.JSON(200, struct{}{})
 }
 
-func createServiceBinding(c *gin.Context) {
+func (b *Broker) createServiceBinding(c *gin.Context) {
 
 	type serviceBindingResponse struct {
 		Credentials    map[string]interface{} `json:"credentials"`
@@ -83,12 +83,36 @@ func createServiceBinding(c *gin.Context) {
 	c.JSON(201, serviceBinding)
 }
 
-func deleteServiceBinding(c *gin.Context) {
+func (b *Broker) deleteServiceBinding(c *gin.Context) {
 	serviceID := c.Param("service_id")
 	serviceBindingID := c.Param("binding_id")
 	fmt.Printf("Delete service binding %s for service %s plan %s instance %s\n",
 		serviceBindingID, serviceID)
 	c.JSON(200, struct{}{})
+}
+
+// newBrokerAPI returns a http.Handler which exposes the Cloud Foundry
+// Service Broker API for the supplied Broker implementation.
+// The broker is always protected by the user and pass basic auth
+// credentials.
+func newBrokerAPI(b *Broker, user, pass string) http.Handler {
+	if user == "" || pass == "" {
+		log.Fatal("AUTH_USER and AUTH_PASS must be set")
+	}
+
+	// create new router
+	g := gin.Default()
+
+	// apply basic auth over all endpoints
+	authorized := g.Group("/", gin.BasicAuth(gin.Accounts{user: pass}))
+
+	authorized.GET("/v2/catalog", b.Catalog)
+	authorized.PUT("/v2/service_instances/:service_id", b.createServiceInstance)
+	authorized.DELETE("/v2/service_instances/:service_id", b.deleteServiceInstance)
+	authorized.PUT("/v2/service_instances/:service_id/service_bindings/:binding_id", b.createServiceBinding)
+	authorized.DELETE("/v2/service_instances/:service_id/service_bindings/:binding_id", b.deleteServiceBinding)
+
+	return g
 }
 
 func main() {
@@ -97,27 +121,16 @@ func main() {
 
 	addr := ":" + *port
 
-	// create new router
-	g := gin.Default()
-
-	// apply basic auth over all endpoints
-	user := os.Getenv("AUTH_USER")
-	pass := os.Getenv("AUTH_PASS")
-	if user == "" || pass == "" {
-		log.Fatal("AUTH_USER and AUTH_PASS must be set")
+	appEnv, err := cfenv.Current()
+	if err != nil {
+		log.Fatal(err)
 	}
-	authorized := g.Group("/", gin.BasicAuth(gin.Accounts{user: pass}))
 
-	// Cloud Foundry Service API
-	authorized.GET("/v2/catalog", brokerCatalog)
-	authorized.PUT("/v2/service_instances/:service_id", createServiceInstance)
-	authorized.DELETE("/v2/service_instances/:service_id", deleteServiceInstance)
-	authorized.PUT("/v2/service_instances/:service_id/service_bindings/:binding_id", createServiceBinding)
-	authorized.DELETE("/v2/service_instances/:service_id/service_bindings/:binding_id", deleteServiceBinding)
+	b := Broker{env: appEnv}
+	api := newBrokerAPI(&b, os.Getenv("AUTH_USER"), os.Getenv("AUTH_PASS"))
 
 	log.Println(os.Args[0], "listening on", addr)
-	err := g.Run(addr)
-	if err != nil {
+	if err := http.ListenAndServe(addr, api); err != nil {
 		log.Fatal(err)
 	}
 }
