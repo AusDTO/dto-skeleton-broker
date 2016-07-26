@@ -13,11 +13,11 @@ import (
 
 // A Broker represents a Cloud Foundry Service Broker
 type Broker struct {
-	Env *cfenv.App
 }
 
 // API implements the Service Broker REST API
 type API struct {
+	Env *cfenv.App
 	*Broker
 }
 
@@ -50,7 +50,7 @@ func (a *API) createServiceInstance(c *gin.Context) {
 		DashboardURL string `json:"dashboard_url"`
 	}
 
-	instance := serviceInstanceResponse{DashboardURL: fmt.Sprintf("https://%s/dashboard", a.Broker.Env.ApplicationURIs[0])}
+	instance := serviceInstanceResponse{DashboardURL: fmt.Sprintf("https://%s/dashboard", a.Env.ApplicationURIs[0])}
 	c.JSON(201, instance)
 }
 
@@ -94,7 +94,7 @@ func (a *API) deleteServiceBinding(c *gin.Context) {
 // Service Broker API for the supplied Broker implementation.
 // The broker is always protected by the user and pass basic auth
 // credentials.
-func NewAPI(b *Broker, user, pass string) http.Handler {
+func NewAPI(env *cfenv.App, b *Broker, user, pass string) http.Handler {
 	if user == "" || pass == "" {
 		log.Fatal("AUTH_USER and AUTH_PASS must be set")
 	}
@@ -106,6 +106,7 @@ func NewAPI(b *Broker, user, pass string) http.Handler {
 	authorized := g.Group("/", gin.BasicAuth(gin.Accounts{user: pass}))
 
 	api := API{
+		Env:    env,
 		Broker: b,
 	}
 
