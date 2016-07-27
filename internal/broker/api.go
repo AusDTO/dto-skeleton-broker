@@ -12,13 +12,19 @@ import (
 )
 
 // A Broker represents a Cloud Foundry Service Broker
-type Broker struct {
+type Broker interface {
+
+	// Bind requests the creation of a service instance binding.
+	Bind(instanceid, bindingid string) error
+
+	// Unbind requests the destructions of a service instance binding
+	Unbind(instanceid, bindingid string) error
 }
 
 // API implements the Service Broker REST API
 type API struct {
 	Env *cfenv.App
-	*Broker
+	Broker
 }
 
 func (a *API) Catalog(c *gin.Context) {
@@ -91,10 +97,10 @@ func (a *API) deleteServiceBinding(c *gin.Context) {
 }
 
 // NewAPI returns a http.Handler which exposes the Cloud Foundry
-// Service Broker API for the supplied Broker implementation.
+// Service Broker API using the supplied Broker.
 // The broker is always protected by the user and pass basic auth
 // credentials.
-func NewAPI(env *cfenv.App, b *Broker, user, pass string) http.Handler {
+func NewAPI(env *cfenv.App, b Broker, user, pass string) http.Handler {
 	if user == "" || pass == "" {
 		log.Fatal("AUTH_USER and AUTH_PASS must be set")
 	}

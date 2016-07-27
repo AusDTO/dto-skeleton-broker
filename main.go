@@ -31,8 +31,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	b := broker.Broker{}
-	api := broker.NewAPI(appEnv, &b, os.Getenv("AUTH_USER"), os.Getenv("AUTH_PASS"))
+	b := new(broker.MockBroker)
+	api := broker.NewAPI(appEnv, b, os.Getenv("AUTH_USER"), os.Getenv("AUTH_PASS"))
 
 	log.Println(os.Args[0], "listening on", addr)
 	if err := http.ListenAndServe(addr, api); err != nil {
