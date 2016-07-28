@@ -13,6 +13,9 @@ import (
 
 // A Broker represents a Cloud Foundry Service Broker
 type Broker interface {
+	Provision(instanceid, string) error
+
+	Deprovision(instanceid string) error
 
 	// Bind requests the creation of a service instance binding.
 	Bind(instanceid, bindingid string) error
