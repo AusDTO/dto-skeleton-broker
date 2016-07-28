@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -53,6 +54,24 @@ func (a *API) Catalog(c *gin.Context) {
 
 func (a *API) Provision(c *gin.Context) {
 	serviceID := c.Param("service_id")
+
+	type ProvisionDetails struct {
+		ServiceID        string          `json:"service_id"`
+		PlanID           string          `json:"plan_id"`
+		OrganizationGUID string          `json:"organization_guid"`
+		SpaceGUID        string          `json:"space_guid"`
+		RawParameters    json.RawMessage `json:"parameters,omitempty"`
+	}
+
+	var details ProvisionDetails
+
+	if err := json.NewDecoder(c.Request.Body).Decode(&details); err != nil {
+		c.JSON(422, struct {
+			Description string
+		}{Description: err.Error()})
+		return
+	}
+
 	fmt.Printf("Creating service instance %s for service %s plan %s\n", serviceID)
 
 	type serviceInstanceResponse struct {
