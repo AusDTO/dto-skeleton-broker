@@ -13,7 +13,7 @@ import (
 
 // A Broker represents a Cloud Foundry Service Broker
 type Broker interface {
-	Provision(instanceid, string) error
+	Provision(instanceid string) error
 
 	Deprovision(instanceid string) error
 
@@ -51,7 +51,7 @@ func (a *API) Catalog(c *gin.Context) {
 	c.JSON(200, catalog)
 }
 
-func (a *API) createServiceInstance(c *gin.Context) {
+func (a *API) Provision(c *gin.Context) {
 	serviceID := c.Param("service_id")
 	fmt.Printf("Creating service instance %s for service %s plan %s\n", serviceID)
 
@@ -63,13 +63,13 @@ func (a *API) createServiceInstance(c *gin.Context) {
 	c.JSON(201, instance)
 }
 
-func (a *API) deleteServiceInstance(c *gin.Context) {
+func (a *API) Deprovision(c *gin.Context) {
 	serviceID := c.Param("service_id")
 	fmt.Printf("Deleting service instance %s for service %s plan %s\n", serviceID)
 	c.JSON(200, struct{}{})
 }
 
-func (a *API) createServiceBinding(c *gin.Context) {
+func (a *API) Bind(c *gin.Context) {
 
 	type serviceBindingResponse struct {
 		Credentials    map[string]interface{} `json:"credentials"`
@@ -91,7 +91,7 @@ func (a *API) createServiceBinding(c *gin.Context) {
 	c.JSON(201, serviceBinding)
 }
 
-func (a *API) deleteServiceBinding(c *gin.Context) {
+func (a *API) Unbind(c *gin.Context) {
 	serviceID := c.Param("service_id")
 	serviceBindingID := c.Param("binding_id")
 	fmt.Printf("Delete service binding %s for service %s plan %s instance %s\n",
@@ -120,10 +120,10 @@ func NewAPI(env *cfenv.App, b Broker, user, pass string) http.Handler {
 	}
 
 	authorized.GET("/v2/catalog", api.Catalog)
-	authorized.PUT("/v2/service_instances/:service_id", api.createServiceInstance)
-	authorized.DELETE("/v2/service_instances/:service_id", api.deleteServiceInstance)
-	authorized.PUT("/v2/service_instances/:service_id/service_bindings/:binding_id", api.createServiceBinding)
-	authorized.DELETE("/v2/service_instances/:service_id/service_bindings/:binding_id", api.deleteServiceBinding)
+	authorized.PUT("/v2/service_instances/:service_id", api.Provision)
+	authorized.DELETE("/v2/service_instances/:service_id", api.Deprovision)
+	authorized.PUT("/v2/service_instances/:service_id/service_bindings/:binding_id", api.Bind)
+	authorized.DELETE("/v2/service_instances/:service_id/service_bindings/:binding_id", api.Unbind)
 
 	return g
 }
