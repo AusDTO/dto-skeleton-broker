@@ -12,23 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// A Broker represents a Cloud Foundry Service Broker
-type Broker interface {
-
-	// Provision creates an instance of the serviceid, planid pair
-	// and associates it with the provided instanceid.
-	Provision(instanceid, serviceid, planid string) error
-
-	// Deprovision removes an existing service instance.
-	Deprovision(instanceid, serivceid, planid string) error
-
-	// Bind requests the creation of a service instance binding.
-	Bind(instanceid, bindingid, serviceid, planid string) error
-
-	// Unbind requests the destructions of a service instance binding
-	Unbind(instanceid, bindingid, serivceid, planid string) error
-}
-
 // API implements the Service Broker REST API
 type API struct {
 	Env *cfenv.App
@@ -184,8 +167,10 @@ func NewAPI(env *cfenv.App, b Broker, user, pass string) http.Handler {
 	authorized := g.Group("/", gin.BasicAuth(gin.Accounts{user: pass}))
 
 	api := API{
-		Env:    env,
-		Broker: b,
+		Env: env,
+		Broker: &validatingBroker{
+			Broker: b,
+		},
 	}
 
 	authorized.GET("/v2/catalog", api.Catalog)
