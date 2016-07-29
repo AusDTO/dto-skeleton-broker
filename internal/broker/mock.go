@@ -11,7 +11,8 @@ func (b *MockBroker) Provision(instanceid, serviceid, planid string) error {
 	return nil
 }
 
-func (b *MockBroker) Deprovision(instanceid string) error {
+func (b *MockBroker) Deprovision(instanceid, serviceid, planid string) error {
+	fmt.Printf("Deleting service instance %s for service %s plan %s\n", instanceid, serviceid, planid)
 	return nil
 }
 

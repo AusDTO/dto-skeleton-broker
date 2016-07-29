@@ -14,9 +14,13 @@ import (
 
 // A Broker represents a Cloud Foundry Service Broker
 type Broker interface {
+
+	// Provision creates an instance of the serviceid, planid pair
+	// and associates it with the provided instanceid.
 	Provision(instanceid, serviceid, planid string) error
 
-	Deprovision(instanceid string) error
+	// Deprovision removes an existing service instance.
+	Deprovision(instanceid, serivceid, planid string) error
 
 	// Bind requests the creation of a service instance binding.
 	Bind(instanceid, bindingid string) error
@@ -89,7 +93,15 @@ func (a *API) Provision(c *gin.Context) {
 
 func (a *API) Deprovision(c *gin.Context) {
 	instanceid := c.Param("instance_id")
-	fmt.Printf("Deleting service instance %s for service %s plan %s\n", instanceid)
+	serviceid := c.Query("service_id")
+	planid := c.Query("plan_id")
+
+	if err := a.Broker.Deprovision(instanceid, serviceid, planid); err != nil {
+		c.JSON(504, struct {
+			Description string
+		}{Description: err.Error()})
+		return
+	}
 	c.JSON(200, struct{}{})
 }
 
