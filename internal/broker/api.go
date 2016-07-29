@@ -10,6 +10,7 @@ import (
 	"github.com/cloudfoundry-community/go-cfenv"
 	"github.com/cloudfoundry-community/types-cf"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 )
 
 // API implements the Service Broker REST API
@@ -156,15 +157,13 @@ func (a *API) Unbind(c *gin.Context) {
 // The broker is always protected by the user and pass basic auth
 // credentials.
 func NewAPI(env *cfenv.App, b Broker, user, pass string) http.Handler {
-	if user == "" || pass == "" {
-		log.Fatal("AUTH_USER and AUTH_PASS must be set")
-	}
-
 	// create new router
 	g := gin.Default()
 
-	// apply basic auth over all endpoints
-	authorized := g.Group("/", gin.BasicAuth(gin.Accounts{user: pass}))
+	authorised, err := withAuth(g, user, pass)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	api := API{
 		Env: env,
@@ -173,11 +172,20 @@ func NewAPI(env *cfenv.App, b Broker, user, pass string) http.Handler {
 		},
 	}
 
-	authorized.GET("/v2/catalog", api.Catalog)
-	authorized.PUT("/v2/service_instances/:instance_id", api.Provision)
-	authorized.DELETE("/v2/service_instances/:instance_id", api.Deprovision)
-	authorized.PUT("/v2/service_instances/:instance_id/service_bindings/:binding_id", api.Bind)
-	authorized.DELETE("/v2/service_instances/:instance_id/service_bindings/:binding_id", api.Unbind)
+	authorised.GET("/v2/catalog", api.Catalog)
+	authorised.PUT("/v2/service_instances/:instance_id", api.Provision)
+	authorised.DELETE("/v2/service_instances/:instance_id", api.Deprovision)
+	authorised.PUT("/v2/service_instances/:instance_id/service_bindings/:binding_id", api.Bind)
+	authorised.DELETE("/v2/service_instances/:instance_id/service_bindings/:binding_id", api.Unbind)
 
 	return g
+}
+
+func withAuth(g *gin.Engine, user, pass string) (*gin.RouterGroup, error) {
+	if user == "" || pass == "" {
+		return nil, errors.New("AUTH_USER and AUTH_PASS must be set")
+	}
+
+	// apply basic auth over all endpoints
+	return g.Group("/", gin.BasicAuth(gin.Accounts{user: pass})), nil
 }

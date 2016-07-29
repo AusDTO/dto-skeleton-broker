@@ -31,7 +31,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	b := new(broker.MockBroker)
+	b := new(MockBroker)
 	api := broker.NewAPI(appEnv, b, os.Getenv("AUTH_USER"), os.Getenv("AUTH_PASS"))
 
 	log.Println(os.Args[0], "listening on", addr)
