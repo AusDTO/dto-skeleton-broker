@@ -88,8 +88,8 @@ func (a *API) Provision(c *gin.Context) {
 }
 
 func (a *API) Deprovision(c *gin.Context) {
-	serviceID := c.Param("service_id")
-	fmt.Printf("Deleting service instance %s for service %s plan %s\n", serviceID)
+	instanceid := c.Param("instance_id")
+	fmt.Printf("Deleting service instance %s for service %s plan %s\n", instanceid)
 	c.JSON(200, struct{}{})
 }
 
@@ -100,10 +100,10 @@ func (a *API) Bind(c *gin.Context) {
 		SyslogDrainURL string                 `json:"syslog_drain_url,omitempty"`
 	}
 
-	serviceID := c.Param("service_id")
+	instanceid := c.Param("instance_id")
 	serviceBindingID := c.Param("binding_id")
 	fmt.Printf("Creating service binding %s for service %s plan %s instance %s\n",
-		serviceBindingID, serviceID)
+		serviceBindingID, instanceid)
 
 	serviceBinding := serviceBindingResponse{
 		Credentials: map[string]interface{}{
@@ -116,10 +116,10 @@ func (a *API) Bind(c *gin.Context) {
 }
 
 func (a *API) Unbind(c *gin.Context) {
-	serviceID := c.Param("service_id")
+	instanceid := c.Param("instanceid")
 	serviceBindingID := c.Param("binding_id")
 	fmt.Printf("Delete service binding %s for service %s plan %s instance %s\n",
-		serviceBindingID, serviceID)
+		serviceBindingID, instanceid)
 	c.JSON(200, struct{}{})
 }
 
@@ -145,9 +145,9 @@ func NewAPI(env *cfenv.App, b Broker, user, pass string) http.Handler {
 
 	authorized.GET("/v2/catalog", api.Catalog)
 	authorized.PUT("/v2/service_instances/:instance_id", api.Provision)
-	authorized.DELETE("/v2/service_instances/:service_id", api.Deprovision)
-	authorized.PUT("/v2/service_instances/:service_id/service_bindings/:binding_id", api.Bind)
-	authorized.DELETE("/v2/service_instances/:service_id/service_bindings/:binding_id", api.Unbind)
+	authorized.DELETE("/v2/service_instances/:instance_id", api.Deprovision)
+	authorized.PUT("/v2/service_instances/:instance_id/service_bindings/:binding_id", api.Bind)
+	authorized.DELETE("/v2/service_instances/:instance_id/service_bindings/:binding_id", api.Unbind)
 
 	return g
 }
