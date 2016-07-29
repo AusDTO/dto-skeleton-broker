@@ -23,10 +23,10 @@ type Broker interface {
 	Deprovision(instanceid, serivceid, planid string) error
 
 	// Bind requests the creation of a service instance binding.
-	Bind(instanceid, bindingid string) error
+	Bind(instanceid, bindingid, serviceid, planid string) error
 
 	// Unbind requests the destructions of a service instance binding
-	Unbind(instanceid, bindingid string) error
+	Unbind(instanceid, bindingid, serivceid, planid string) error
 }
 
 // API implements the Service Broker REST API
@@ -112,10 +112,36 @@ func (a *API) Bind(c *gin.Context) {
 		SyslogDrainURL string                 `json:"syslog_drain_url,omitempty"`
 	}
 
+	type BindResource struct {
+		AppGuid string `json:"app_guid,omitempty"`
+		Route   string `json:"route,omitempty"`
+	}
+
+	type BindDetails struct {
+		AppGUID      string                 `json:"app_guid"`
+		PlanID       string                 `json:"plan_id"`
+		ServiceID    string                 `json:"service_id"`
+		BindResource *BindResource          `json:"bind_resource,omitempty"`
+		Parameters   map[string]interface{} `json:"parameters,omitempty"`
+	}
+
 	instanceid := c.Param("instance_id")
-	serviceBindingID := c.Param("binding_id")
-	fmt.Printf("Creating service binding %s for service %s plan %s instance %s\n",
-		serviceBindingID, instanceid)
+	bindingid := c.Param("binding_id")
+
+	var details BindDetails
+	if err := json.NewDecoder(c.Request.Body).Decode(&details); err != nil {
+		c.JSON(422, struct {
+			Description string
+		}{Description: err.Error()})
+		return
+	}
+
+	if err := a.Broker.Bind(instanceid, bindingid, details.ServiceID, details.PlanID); err != nil {
+		c.JSON(504, struct {
+			Description string
+		}{Description: err.Error()})
+		return
+	}
 
 	serviceBinding := serviceBindingResponse{
 		Credentials: map[string]interface{}{
@@ -128,10 +154,17 @@ func (a *API) Bind(c *gin.Context) {
 }
 
 func (a *API) Unbind(c *gin.Context) {
-	instanceid := c.Param("instanceid")
-	serviceBindingID := c.Param("binding_id")
-	fmt.Printf("Delete service binding %s for service %s plan %s instance %s\n",
-		serviceBindingID, instanceid)
+	instanceid := c.Param("instance_id")
+	bindingid := c.Param("binding_id")
+	serviceid := c.Query("service_id")
+	planid := c.Query("plan_id")
+
+	if err := a.Broker.Unbind(instanceid, bindingid, serviceid, planid); err != nil {
+		c.JSON(504, struct {
+			Description string
+		}{Description: err.Error()})
+		return
+	}
 	c.JSON(200, struct{}{})
 }
 
