@@ -14,7 +14,7 @@ import (
 
 // A Broker represents a Cloud Foundry Service Broker
 type Broker interface {
-	Provision(instanceid string) error
+	Provision(instanceid, serviceid, planid string) error
 
 	Deprovision(instanceid string) error
 
@@ -53,7 +53,7 @@ func (a *API) Catalog(c *gin.Context) {
 }
 
 func (a *API) Provision(c *gin.Context) {
-	serviceID := c.Param("service_id")
+	instanceid := c.Param("instance_id")
 
 	type ProvisionDetails struct {
 		ServiceID        string          `json:"service_id"`
@@ -72,7 +72,12 @@ func (a *API) Provision(c *gin.Context) {
 		return
 	}
 
-	fmt.Printf("Creating service instance %s for service %s plan %s\n", serviceID)
+	if err := a.Broker.Provision(instanceid, details.ServiceID, details.PlanID); err != nil {
+		c.JSON(504, struct {
+			Description string
+		}{Description: err.Error()})
+		return
+	}
 
 	type serviceInstanceResponse struct {
 		DashboardURL string `json:"dashboard_url"`
@@ -139,7 +144,7 @@ func NewAPI(env *cfenv.App, b Broker, user, pass string) http.Handler {
 	}
 
 	authorized.GET("/v2/catalog", api.Catalog)
-	authorized.PUT("/v2/service_instances/:service_id", api.Provision)
+	authorized.PUT("/v2/service_instances/:instance_id", api.Provision)
 	authorized.DELETE("/v2/service_instances/:service_id", api.Deprovision)
 	authorized.PUT("/v2/service_instances/:service_id/service_bindings/:binding_id", api.Bind)
 	authorized.DELETE("/v2/service_instances/:service_id/service_bindings/:binding_id", api.Unbind)

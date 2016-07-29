@@ -1,9 +1,13 @@
 package broker
 
+import "fmt"
+
 type MockBroker struct {
 }
 
-func (b *MockBroker) Provision(instanceid string) error {
+func (b *MockBroker) Provision(instanceid, serviceid, planid string) error {
+	fmt.Printf("Creating service instance %s for service %s plan %s\n", instanceid, serviceid, planid)
+
 	return nil
 }
 
