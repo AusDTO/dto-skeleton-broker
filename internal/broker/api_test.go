@@ -125,7 +125,7 @@ func TestRespondHasApplicationJSONContentType(t *testing.T) {
 	}
 }
 
-func successfulProvisioning(serviceid, planid string) func(*testBroker) {
+func successfulProvision(serviceid, planid string) func(*testBroker) {
 	return func(b *testBroker) {
 		b.provisionfn = func(t *testing.T, instanceid, serviceid, planid string) error {
 			if serviceid != serviceid {
@@ -139,7 +139,7 @@ func successfulProvisioning(serviceid, planid string) func(*testBroker) {
 	}
 }
 
-func successfulDeprovisioning(serviceid, planid string) func(*testBroker) {
+func successfulDeprovision(serviceid, planid string) func(*testBroker) {
 	return func(b *testBroker) {
 		b.deprovisionfn = func(t *testing.T, instanceid, serviceid, planid string) error {
 			if serviceid != serviceid {
@@ -180,7 +180,7 @@ const (
 )
 
 func TestProvision(t *testing.T) {
-	api := testAPI(t, successfulProvisioning(SERVICE_ID, PLAN_ID))
+	api := testAPI(t, successfulProvision(SERVICE_ID, PLAN_ID))
 	req := request("PUT", "/v2/service_instances/"+INST_ID,
 		auth("admin", "admin"),
 		body(map[string]interface{}{
@@ -196,7 +196,7 @@ func TestProvision(t *testing.T) {
 }
 
 func TestProvisionMissingPlanId(t *testing.T) {
-	api := testAPI(t, successfulProvisioning(SERVICE_ID, PLAN_ID))
+	api := testAPI(t, successfulProvision(SERVICE_ID, PLAN_ID))
 	req := request("PUT", "/v2/service_instances/"+INST_ID,
 		auth("admin", "admin"),
 		body(map[string]interface{}{
@@ -211,7 +211,7 @@ func TestProvisionMissingPlanId(t *testing.T) {
 }
 
 func TestDeprovision(t *testing.T) {
-	api := testAPI(t, successfulDeprovisioning(SERVICE_ID, PLAN_ID))
+	api := testAPI(t, successfulDeprovision(SERVICE_ID, PLAN_ID))
 	req := request("DELETE", "/v2/service_instances/"+INST_ID+"?service_id="+SERVICE_ID+"&plan_id="+PLAN_ID,
 		auth("admin", "admin"))
 	resp := doRequest(api, req)
