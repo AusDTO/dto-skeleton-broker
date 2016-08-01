@@ -170,6 +170,23 @@ func successfulBind(serviceid, planid, bindingid string) func(*testBroker) {
 	}
 }
 
+func successfulUnbind(serviceid, planid, bindingid string) func(*testBroker) {
+	return func(b *testBroker) {
+		b.unbindfn = func(t *testing.T, instanceid, serviceid, planid, bindingid string) error {
+			if serviceid != serviceid {
+				return errors.New("unknown service id")
+			}
+			if planid != planid {
+				return errors.New("unknown plan id")
+			}
+			if bindingid != bindingid {
+				return errors.New("unknown binding id")
+			}
+			return nil
+		}
+	}
+}
+
 const (
 	INST_ID    = `daa4dbef-a861-42a7-b1a3-b161df0b4eb0`
 	ORG_GUID   = `74a00865-cc31-4360-98ab-728e6fd4eacd`
@@ -231,5 +248,17 @@ func TestBind(t *testing.T) {
 	resp := doRequest(api, req)
 	if resp.Code != 201 {
 		t.Fatalf("%s returned status: %d, expected: %d: %s", req, resp.Code, 201, resp.Body.String())
+	}
+}
+
+func TestUnbind(t *testing.T) {
+	api := testAPI(t, successfulUnbind(SERVICE_ID, PLAN_ID, BINDING_ID))
+	req := request("DELETE", "/v2/service_instances/"+INST_ID+"/service_bindings/"+BINDING_ID+
+		"?service_id="+SERVICE_ID+"&plan_id="+PLAN_ID,
+		auth("admin", "admin"),
+	)
+	resp := doRequest(api, req)
+	if resp.Code != 200 {
+		t.Fatalf("%s returned status: %d, expected: %d: %s", req, resp.Code, 200, resp.Body.String())
 	}
 }
