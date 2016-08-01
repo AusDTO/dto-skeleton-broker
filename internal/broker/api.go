@@ -40,6 +40,12 @@ func (a *API) Catalog(c *gin.Context) {
 	c.JSON(200, catalog)
 }
 
+func jsonError(c *gin.Context, code int, err error) {
+	c.JSON(code, struct {
+		Description string
+	}{Description: err.Error()})
+}
+
 func (a *API) Provision(c *gin.Context) {
 	instanceid := c.Param("instance_id")
 
@@ -54,16 +60,12 @@ func (a *API) Provision(c *gin.Context) {
 	var details ProvisionDetails
 
 	if err := json.NewDecoder(c.Request.Body).Decode(&details); err != nil {
-		c.JSON(422, struct {
-			Description string
-		}{Description: err.Error()})
+		jsonError(c, 422, errors.Wrap(err, "failed to decode JSON request body"))
 		return
 	}
 
 	if err := a.Broker.Provision(instanceid, details.ServiceID, details.PlanID); err != nil {
-		c.JSON(504, struct {
-			Description string
-		}{Description: err.Error()})
+		jsonError(c, 504, errors.Wrap(err, "provisioning failed"))
 		return
 	}
 
@@ -71,7 +73,7 @@ func (a *API) Provision(c *gin.Context) {
 		DashboardURL string `json:"dashboard_url"`
 	}
 
-	instance := serviceInstanceResponse{DashboardURL: fmt.Sprintf("https://%s/dashboard", a.Env.ApplicationURIs[0])}
+	instance := serviceInstanceResponse{DashboardURL: fmt.Sprintf("https://localhost/dashboard")}
 	c.JSON(201, instance)
 }
 
@@ -81,9 +83,7 @@ func (a *API) Deprovision(c *gin.Context) {
 	planid := c.Query("plan_id")
 
 	if err := a.Broker.Deprovision(instanceid, serviceid, planid); err != nil {
-		c.JSON(504, struct {
-			Description string
-		}{Description: err.Error()})
+		jsonError(c, 504, errors.Wrap(err, "deprovision failed"))
 		return
 	}
 	c.JSON(200, struct{}{})
@@ -114,16 +114,12 @@ func (a *API) Bind(c *gin.Context) {
 
 	var details BindDetails
 	if err := json.NewDecoder(c.Request.Body).Decode(&details); err != nil {
-		c.JSON(422, struct {
-			Description string
-		}{Description: err.Error()})
+		jsonError(c, 422, errors.Wrap(err, "failed to decode JSON request body"))
 		return
 	}
 
 	if err := a.Broker.Bind(instanceid, bindingid, details.ServiceID, details.PlanID); err != nil {
-		c.JSON(504, struct {
-			Description string
-		}{Description: err.Error()})
+		jsonError(c, 504, errors.Wrap(err, "binding failed"))
 		return
 	}
 
@@ -144,9 +140,7 @@ func (a *API) Unbind(c *gin.Context) {
 	planid := c.Query("plan_id")
 
 	if err := a.Broker.Unbind(instanceid, bindingid, serviceid, planid); err != nil {
-		c.JSON(504, struct {
-			Description string
-		}{Description: err.Error()})
+		jsonError(c, 504, errors.Wrap(err, "unbinding failed"))
 		return
 	}
 	c.JSON(200, struct{}{})

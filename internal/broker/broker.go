@@ -22,7 +22,7 @@ type Broker interface {
 }
 
 // validatingBroker implements the Broker API and validates each parameter
-// passed too the underlying Broker. This free's the real broker implementations
+// passed to the underlying Broker. This frees the real broker implementations
 // from having to deal with invalid input.
 type validatingBroker struct {
 	Broker
