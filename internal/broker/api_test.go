@@ -136,15 +136,23 @@ func successfulProvisioning(serviceid string) func(*testBroker) {
 	}
 }
 
+const (
+	INST_ID    = `daa4dbef-a861-42a7-b1a3-b161df0b4eb0`
+	ORG_GUID   = `74a00865-cc31-4360-98ab-728e6fd4eacd`
+	PLAN_ID    = `da71b52f-a93e-48cb-968b-123e44b19320`
+	SERVICE_ID = `513c3e8e-aa17-48cf-81d0-338c27c06e48`
+	SPACE_GUID = `56635799-ea54-44bc-bd34-6d682ca191e0`
+)
+
 func TestProvision(t *testing.T) {
-	api := testAPI(t, successfulProvisioning("a_service_guid"))
-	req := request("PUT", "/v2/service_instances/a_guid",
+	api := testAPI(t, successfulProvisioning(SERVICE_ID))
+	req := request("PUT", "/v2/service_instances/"+SERVICE_ID,
 		auth("admin", "admin"),
 		body(map[string]interface{}{
-			"organization_guid": "org-guid-here",
-			"plan_id":           "plan-guid-here",
-			"service_id":        "service-guid-here",
-			"space_guid":        "space-guid-here",
+			"organization_guid": ORG_GUID,
+			"plan_id":           PLAN_ID,
+			"service_id":        SERVICE_ID,
+			"space_guid":        SPACE_GUID,
 		}))
 	resp := doRequest(api, req)
 	if resp.Code != 201 {
@@ -153,13 +161,13 @@ func TestProvision(t *testing.T) {
 }
 
 func TestProvisionMissingPlanId(t *testing.T) {
-	api := testAPI(t, successfulProvisioning("a_service_guid"))
-	req := request("PUT", "/v2/service_instances/a_guid",
+	api := testAPI(t, successfulProvisioning(SERVICE_ID))
+	req := request("PUT", "/v2/service_instances/"+SERVICE_ID,
 		auth("admin", "admin"),
 		body(map[string]interface{}{
-			"organization_guid": "org-guid-here",
-			"service_id":        "service-guid-here",
-			"space_guid":        "space-guid-here",
+			"organization_guid": ORG_GUID,
+			"service_id":        SERVICE_ID,
+			"space_guid":        SPACE_GUID,
 		}))
 	resp := doRequest(api, req)
 	if resp.Code != 504 {
