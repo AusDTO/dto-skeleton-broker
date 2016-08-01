@@ -125,11 +125,45 @@ func TestRespondHasApplicationJSONContentType(t *testing.T) {
 	}
 }
 
-func successfulProvisioning(serviceid string) func(*testBroker) {
+func successfulProvisioning(serviceid, planid string) func(*testBroker) {
 	return func(b *testBroker) {
 		b.provisionfn = func(t *testing.T, instanceid, serviceid, planid string) error {
 			if serviceid != serviceid {
 				return errors.New("unknown service id")
+			}
+			if planid != planid {
+				return errors.New("unknown plan id")
+			}
+			return nil
+		}
+	}
+}
+
+func successfulDeprovisioning(serviceid, planid string) func(*testBroker) {
+	return func(b *testBroker) {
+		b.deprovisionfn = func(t *testing.T, instanceid, serviceid, planid string) error {
+			if serviceid != serviceid {
+				return errors.New("unknown service id")
+			}
+			if planid != planid {
+				return errors.New("unknown plan id")
+			}
+			return nil
+		}
+	}
+}
+
+func successfulBind(serviceid, planid, bindingid string) func(*testBroker) {
+	return func(b *testBroker) {
+		b.bindfn = func(t *testing.T, instanceid, serviceid, planid, bindingid string) error {
+			if serviceid != serviceid {
+				return errors.New("unknown service id")
+			}
+			if planid != planid {
+				return errors.New("unknown plan id")
+			}
+			if bindingid != bindingid {
+				return errors.New("unknown binding id")
 			}
 			return nil
 		}
@@ -142,11 +176,12 @@ const (
 	PLAN_ID    = `da71b52f-a93e-48cb-968b-123e44b19320`
 	SERVICE_ID = `513c3e8e-aa17-48cf-81d0-338c27c06e48`
 	SPACE_GUID = `56635799-ea54-44bc-bd34-6d682ca191e0`
+	BINDING_ID = `bcc24d05-e8ae-4231-b60b-55e95a44c6f5`
 )
 
 func TestProvision(t *testing.T) {
-	api := testAPI(t, successfulProvisioning(SERVICE_ID))
-	req := request("PUT", "/v2/service_instances/"+SERVICE_ID,
+	api := testAPI(t, successfulProvisioning(SERVICE_ID, PLAN_ID))
+	req := request("PUT", "/v2/service_instances/"+INST_ID,
 		auth("admin", "admin"),
 		body(map[string]interface{}{
 			"organization_guid": ORG_GUID,
@@ -161,8 +196,8 @@ func TestProvision(t *testing.T) {
 }
 
 func TestProvisionMissingPlanId(t *testing.T) {
-	api := testAPI(t, successfulProvisioning(SERVICE_ID))
-	req := request("PUT", "/v2/service_instances/"+SERVICE_ID,
+	api := testAPI(t, successfulProvisioning(SERVICE_ID, PLAN_ID))
+	req := request("PUT", "/v2/service_instances/"+INST_ID,
 		auth("admin", "admin"),
 		body(map[string]interface{}{
 			"organization_guid": ORG_GUID,
@@ -172,5 +207,29 @@ func TestProvisionMissingPlanId(t *testing.T) {
 	resp := doRequest(api, req)
 	if resp.Code != 504 {
 		t.Fatalf("%s returned status: %d, expected: %d", req, resp.Code, 504)
+	}
+}
+
+func TestDeprovision(t *testing.T) {
+	api := testAPI(t, successfulDeprovisioning(SERVICE_ID, PLAN_ID))
+	req := request("DELETE", "/v2/service_instances/"+INST_ID+"?service_id="+SERVICE_ID+"&plan_id="+PLAN_ID,
+		auth("admin", "admin"))
+	resp := doRequest(api, req)
+	if resp.Code != 200 {
+		t.Fatalf("%s returned status: %d, expected: %d: %s", req, resp.Code, 200, resp.Body.String())
+	}
+}
+
+func TestBind(t *testing.T) {
+	api := testAPI(t, successfulBind(SERVICE_ID, PLAN_ID, BINDING_ID))
+	req := request("PUT", "/v2/service_instances/"+INST_ID+"/service_bindings/"+BINDING_ID,
+		auth("admin", "admin"),
+		body(map[string]interface{}{
+			"plan_id":    PLAN_ID,
+			"service_id": SERVICE_ID,
+		}))
+	resp := doRequest(api, req)
+	if resp.Code != 201 {
+		t.Fatalf("%s returned status: %d, expected: %d: %s", req, resp.Code, 201, resp.Body.String())
 	}
 }
